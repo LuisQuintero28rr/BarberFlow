@@ -117,6 +117,15 @@ def crear_barbero(nombre: str, telefono: str, _: str = Depends(verificar_admin))
     conexion.close()
     return {"mensaje": "Barbero registrado con éxito", "id": nuevo_id}
 
+@app.delete("/barberos/{barbero_id}")
+def eliminar_barbero(barbero_id: int, _: str = Depends(verificar_admin)):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute("DELETE FROM barberos WHERE id = ?", (barbero_id,))
+    conexion.commit()
+    conexion.close()
+    return {"mensaje": f"Barbero {barbero_id} eliminado con éxito"}
+
 # ==================== CITAS ====================
 
 @app.post("/citas")

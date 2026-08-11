@@ -22,7 +22,7 @@
         .form-group input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
         .btn-submit { width: 100%; background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; }
         .btn-submit:hover { background: #0369a1; }
-        .btn-logout { background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 10px; }
+        .btn-logout { background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
@@ -38,6 +38,9 @@
         .btn-completar { background: #22c55e; }
         .btn-cancelar { background: #f97316; }
         .btn-eliminar { background: #ef4444; }
+
+        .item-lista { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 8px 12px; border-radius: 6px; margin-top: 8px; border: 1px solid #334155; }
+        .lista-barberos { max-height: 140px; overflow-y: auto; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -68,6 +71,8 @@
                 </div>
                 <button type="submit" class="btn-submit">Guardar Barbero</button>
             </form>
+
+            <div class="lista-barberos" id="listaBarberos"></div>
         </div>
 
         <div class="card-form">
@@ -150,6 +155,32 @@
         return res;
     }
 
+    async function cargarBarberos() {
+        const res = await fetch('/barberos');
+        if (res.ok) {
+            const barberos = await res.json();
+            const contenedor = document.getElementById('listaBarberos');
+            contenedor.innerHTML = '';
+            barberos.forEach(b => {
+                contenedor.innerHTML += `
+                    <div class="item-lista">
+                        <span><strong>${b.nombre}</strong> (${b.telefono})</span>
+                        <button class="btn-act btn-eliminar" onclick="eliminarBarbero(${b.id})">🗑️</button>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    async function eliminarBarbero(id) {
+        if (confirm(`¿Estás seguro de eliminar a este barbero?`)) {
+            const res = await fetchProtegido(`/barberos/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                cargarBarberos();
+            }
+        }
+    }
+
     async function cargarIngresos() {
         const res = await fetchProtegido('/ingresos');
         if (res.ok) {
@@ -216,6 +247,7 @@
         if (res.ok) {
             alert('Barbero registrado con éxito');
             document.getElementById('formBarbero').reset();
+            cargarBarberos();
         }
     }
 
@@ -252,6 +284,7 @@
         }
     }
 
+    cargarBarberos();
     cargarCitas();
 </script>
 
