@@ -7,13 +7,23 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; }
         .container { max-width: 950px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
         h1 { color: #38bdf8; margin: 0; }
+        h2 { color: #38bdf8; font-size: 1.1rem; margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
         
         /* Tarjeta de Ingresos */
         .card-ingresos { background: #0f172a; border: 1px solid #38bdf8; padding: 15px 25px; border-radius: 10px; text-align: right; }
         .card-ingresos span { display: block; font-size: 0.85rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
         .card-ingresos strong { font-size: 1.6rem; color: #4ade80; }
+
+        /* Grid para Formularios */
+        .forms-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card-form { background: #0f172a; padding: 20px; border-radius: 10px; border: 1px solid #334155; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
+        .btn-submit { width: 100%; background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; }
+        .btn-submit:hover { background: #0369a1; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
@@ -29,13 +39,51 @@
 
 <div class="container">
     <div class="header-flex">
-        <h1>💈 BarberFlow - Agenda</h1>
+        <h1>💈 BarberFlow - Panel Admin</h1>
         <div class="card-ingresos">
             <span>Caja / Ingresos Totales</span>
             <strong id="totalIngresos">$0.00</strong>
         </div>
     </div>
 
+    <!-- Secciones para dar de alta Barbero y Servicio -->
+    <div class="forms-grid">
+        <div class="card-form">
+            <h2>➕ Registrar Barbero</h2>
+            <form id="formBarbero" onsubmit="registrarBarbero(event)">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="barberoNombre" required placeholder="Ej. Carlos Mendoza">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono WhatsApp</label>
+                    <input type="text" id="barberoTelefono" required placeholder="Ej. 6181234567">
+                </div>
+                <button type="submit" class="btn-submit">Guardar Barbero</button>
+            </form>
+        </div>
+
+        <div class="card-form">
+            <h2>✂️ Registrar Servicio</h2>
+            <form id="formServicio" onsubmit="registrarServicio(event)">
+                <div class="form-group">
+                    <label>Nombre del Servicio</label>
+                    <input type="text" id="servicioNombre" required placeholder="Ej. Barba + Corte">
+                </div>
+                <div class="form-group">
+                    <label>Precio ($)</label>
+                    <input type="number" step="0.01" id="servicioPrecio" required placeholder="Ej. 200">
+                </div>
+                <div class="form-group">
+                    <label>Duración (Minutos)</label>
+                    <input type="number" id="servicioDuracion" required placeholder="Ej. 45">
+                </div>
+                <button type="submit" class="btn-submit">Guardar Servicio</button>
+            </form>
+        </div>
+    </div>
+
+    <h2>📋 Agenda de Citas</h2>
     <table>
         <thead>
             <tr>
@@ -90,6 +138,31 @@
     async function completarCita(id) {
         await fetch(`/citas/${id}?estado=Completada`, { method: 'PUT' });
         cargarCitas();
+    }
+
+    async function registrarBarbero(event) {
+        event.preventDefault();
+        const nombre = document.getElementById('barberoNombre').value;
+        const telefono = document.getElementById('barberoTelefono').value;
+
+        const url = `/barberos?nombre=${encodeURIComponent(nombre)}&telefono=${encodeURIComponent(telefono)}`;
+        await fetch(url, { method: 'POST' });
+        
+        alert('Barbero registrado con éxito');
+        document.getElementById('formBarbero').reset();
+    }
+
+    async function registrarServicio(event) {
+        event.preventDefault();
+        const nombre = document.getElementById('servicioNombre').value;
+        const precio = document.getElementById('servicioPrecio').value;
+        const duracion = document.getElementById('servicioDuracion').value;
+
+        const url = `/servicios?nombre=${encodeURIComponent(nombre)}&precio=${precio}&duracion_minutos=${duracion}`;
+        await fetch(url, { method: 'POST' });
+
+        alert('Servicio registrado con éxito');
+        document.getElementById('formServicio').reset();
     }
 
     cargarCitas();
