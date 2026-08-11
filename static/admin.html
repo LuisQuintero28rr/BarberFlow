@@ -37,10 +37,11 @@
         .btn-act { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-size: 0.8rem; }
         .btn-completar { background: #22c55e; }
         .btn-cancelar { background: #f97316; }
+        .btn-editar { background: #eab308; }
         .btn-eliminar { background: #ef4444; }
 
         .item-lista { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 8px 12px; border-radius: 6px; margin-top: 8px; border: 1px solid #334155; }
-        .lista-barberos { max-height: 140px; overflow-y: auto; margin-top: 10px; }
+        .contenedor-lista { max-height: 140px; overflow-y: auto; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -72,7 +73,7 @@
                 <button type="submit" class="btn-submit">Guardar Barbero</button>
             </form>
 
-            <div class="lista-barberos" id="listaBarberos"></div>
+            <div class="contenedor-lista" id="listaBarberos"></div>
         </div>
 
         <div class="card-form">
@@ -92,6 +93,8 @@
                 </div>
                 <button type="submit" class="btn-submit">Guardar Servicio</button>
             </form>
+
+            <div class="contenedor-lista" id="listaServicios"></div>
         </div>
 
         <div class="card-form">
@@ -136,9 +139,7 @@
     }
 
     function headersAuth() {
-        return {
-            'X-Admin-Token': token
-        };
+        return { 'X-Admin-Token': token };
     }
 
     function cerrarSesion() {
@@ -149,9 +150,7 @@
     async function fetchProtegido(url, options = {}) {
         options.headers = { ...options.headers, ...headersAuth() };
         const res = await fetch(url, options);
-        if (res.status === 401) {
-            cerrarSesion();
-        }
+        if (res.status === 401) cerrarSesion();
         return res;
     }
 
@@ -175,9 +174,52 @@
     async function eliminarBarbero(id) {
         if (confirm(`¿Estás seguro de eliminar a este barbero?`)) {
             const res = await fetchProtegido(`/barberos/${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                cargarBarberos();
-            }
+            if (res.ok) cargarBarberos();
+        }
+    }
+
+    async function cargarServicios() {
+        const res = await fetch('/servicios');
+        if (res.ok) {
+            const servicios = await res.json();
+            const contenedor = document.getElementById('listaServicios');
+            contenedor.innerHTML = '';
+            servicios.forEach(s => {
+                contenedor.innerHTML += `
+                    <div class="item-lista">
+                        <span><strong>${s.nombre}</strong> - $${s.precio} (${s.duracion_minutos} min)</span>
+                        <div class="action-btns">
+                            <button class="btn-act btn-editar" onclick="editarServicio(${s.id}, '${s.nombre}', ${s.precio}, ${s.duracion_minutos})">✏️</button>
+                            <button class="btn-act btn-eliminar" onclick="eliminarServicio(${s.id})">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    async function editarServicio(id, nombreActual, precioActual, duracionActual) {
+        const nuevoNombre = prompt("Nombre del servicio:", nombreActual);
+        if (nuevoNombre === null) return;
+
+        const nuevoPrecio = prompt("Precio ($):", precioActual);
+        if (nuevoPrecio === null) return;
+
+        const nuevaDuracion = prompt("Duración (minutos):", duracionActual);
+        if (nuevaDuracion === null) return;
+
+        const url = `/servicios/${id}?nombre=${encodeURIComponent(nuevoNombre)}&precio=${nuevoPrecio}&duracion_minutos=${nuevaDuracion}`;
+        const res = await fetchProtegido(url, { method: 'PUT' });
+        if (res.ok) {
+            alert('Servicio actualizado correctamente');
+            cargarServicios();
+        }
+    }
+
+    async function eliminarServicio(id) {
+        if (confirm(`¿Estás seguro de eliminar este servicio?`)) {
+            const res = await fetchProtegido(`/servicios/${id}`, { method: 'DELETE' });
+            if (res.ok) cargarServicios();
         }
     }
 
@@ -263,6 +305,7 @@
         if (res.ok) {
             alert('Servicio registrado con éxito');
             document.getElementById('formServicio').reset();
+            cargarServicios();
         }
     }
 
@@ -285,6 +328,7 @@
     }
 
     cargarBarberos();
+    cargarServicios();
     cargarCitas();
 </script>
 

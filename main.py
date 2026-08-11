@@ -96,6 +96,28 @@ def crear_servicio(nombre: str, precio: float, duracion_minutos: int, _: str = D
     conexion.close()
     return {"mensaje": "Servicio registrado con éxito", "id": nuevo_id}
 
+@app.put("/servicios/{servicio_id}")
+def actualizar_servicio(servicio_id: int, nombre: str, precio: float, duracion_minutos: int, _: str = Depends(verificar_admin)):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        UPDATE servicios 
+        SET nombre = ?, precio = ?, duracion_minutos = ? 
+        WHERE id = ?
+    """, (nombre, precio, duracion_minutos, servicio_id))
+    conexion.commit()
+    conexion.close()
+    return {"mensaje": f"Servicio {servicio_id} actualizado con éxito"}
+
+@app.delete("/servicios/{servicio_id}")
+def eliminar_servicio(servicio_id: int, _: str = Depends(verificar_admin)):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute("DELETE FROM servicios WHERE id = ?", (servicio_id,))
+    conexion.commit()
+    conexion.close()
+    return {"mensaje": f"Servicio {servicio_id} eliminado con éxito"}
+
 # ==================== BARBEROS ====================
 
 @app.get("/barberos")
