@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarberFlow - Iniciar Sesión</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .login-card { background: #1e293b; padding: 35px; border-radius: 12px; width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 1px solid #334155; }
+        h1 { color: #38bdf8; font-size: 1.5rem; text-align: center; margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        button { width: 100%; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0369a1; }
+        .error { color: #ef4444; font-size: 0.85rem; text-align: center; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h1>💈 BarberFlow Admin</h1>
+    <form onsubmit="iniciarSesion(event)">
+        <div class="form-group">
+            <label>Usuario</label>
+            <input type="text" id="usuario" required placeholder="Ingresa tu usuario">
+        </div>
+        <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="password" required placeholder="••••••••">
+        </div>
+        <button type="submit">Ingresar al Panel</button>
+        <div id="errorMsg" class="error">Usuario o contraseña incorrectos</div>
+    </form>
+</div>
+
+<script>
+    async function iniciarSesion(e) {
+        e.preventDefault();
+        const usuario = document.getElementById('usuario').value;
+        const password = document.getElementById('password').value;
+        const errorMsg = document.getElementById('errorMsg');
+
+        errorMsg.style.display = 'none';
+
+        const res = await fetch(`/login?usuario=${encodeURIComponent(usuario)}&password=${encodeURIComponent(password)}`, { method: 'POST' });
+        
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('adminToken', data.token);
+            window.location.href = '/admin.html';
+        } else {
+            errorMsg.style.display = 'block';
+        }
+    }
+</script>
+
+</body>
+</html>

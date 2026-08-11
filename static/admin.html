@@ -22,6 +22,7 @@
         .form-group input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
         .btn-submit { width: 100%; background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; }
         .btn-submit:hover { background: #0369a1; }
+        .btn-logout { background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 10px; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
@@ -35,18 +36,18 @@
         .action-btns { display: flex; gap: 6px; }
         .btn-act { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-size: 0.8rem; }
         .btn-completar { background: #22c55e; }
-        .btn-completar:hover { background: #15803d; }
         .btn-cancelar { background: #f97316; }
-        .btn-cancelar:hover { background: #c2410c; }
         .btn-eliminar { background: #ef4444; }
-        .btn-eliminar:hover { background: #b91c1c; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header-flex">
-        <h1>💈 BarberFlow - Panel Admin</h1>
+        <div>
+            <h1>💈 BarberFlow - Panel Admin</h1>
+            <button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
+        </div>
         <div class="card-ingresos">
             <span>Caja / Ingresos Totales</span>
             <strong id="totalIngresos">$0.00</strong>
@@ -87,6 +88,21 @@
                 <button type="submit" class="btn-submit">Guardar Servicio</button>
             </form>
         </div>
+
+        <div class="card-form">
+            <h2>🔑 Cambiar Contraseña</h2>
+            <form onsubmit="cambiarPassword(event)">
+                <div class="form-group">
+                    <label>Contraseña Actual</label>
+                    <input type="password" id="passActual" required>
+                </div>
+                <div class="form-group">
+                    <label>Nueva Contraseña</label>
+                    <input type="password" id="passNueva" required>
+                </div>
+                <button type="submit" class="btn-submit" style="background:#10b981;">Actualizar Clave</button>
+            </form>
+        </div>
     </div>
 
     <h2>📋 Agenda de Citas</h2>
@@ -108,23 +124,51 @@
 </div>
 
 <script>
+    const token = localStorage.getItem('adminToken');
+
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+
+    function headersAuth() {
+        return {
+            'X-Admin-Token': token
+        };
+    }
+
+    function cerrarSesion() {
+        localStorage.removeItem('adminToken');
+        window.location.href = '/login.html';
+    }
+
+    async function fetchProtegido(url, options = {}) {
+        options.headers = { ...options.headers, ...headersAuth() };
+        const res = await fetch(url, options);
+        if (res.status === 401) {
+            cerrarSesion();
+        }
+        return res;
+    }
+
     async function cargarIngresos() {
-        const res = await fetch('/ingresos');
-        const data = await res.json();
-        document.getElementById('totalIngresos').innerText = `$${data.total_ingresos.toFixed(2)}`;
+        const res = await fetchProtegido('/ingresos');
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('totalIngresos').innerText = `$${data.total_ingresos.toFixed(2)}`;
+        }
     }
 
     async function cargarCitas() {
-        const res = await fetch('/citas');
+        const res = await fetchProtegido('/citas');
+        if (!res.ok) return;
+
         const citas = await res.json();
         const tabla = document.getElementById('tablaCitas');
         tabla.innerHTML = '';
 
         citas.forEach(c => {
             const esPendiente = c.estado === 'Pendiente';
-            let badgeClass = '';
-            if (c.estado === 'Completada') badgeClass = 'completada';
-            if (c.estado === 'Cancelada') badgeClass = 'cancelada';
+            let badgeClass = c.estado === 'Completada' ? 'completada' : (c.estado === 'Cancelada' ? 'cancelada' : '');
 
             tabla.innerHTML += `
                 <tr>
@@ -150,13 +194,13 @@
     }
 
     async function cambiarEstado(id, nuevoEstado) {
-        await fetch(`/citas/${id}?estado=${nuevoEstado}`, { method: 'PUT' });
+        await fetchProtegido(`/citas/${id}?estado=${nuevoEstado}`, { method: 'PUT' });
         cargarCitas();
     }
 
     async function eliminarCita(id) {
         if (confirm(`¿Estás seguro de eliminar permanentemente la cita ID ${id}?`)) {
-            await fetch(`/citas/${id}`, { method: 'DELETE' });
+            await fetchProtegido(`/citas/${id}`, { method: 'DELETE' });
             cargarCitas();
         }
     }
@@ -167,10 +211,12 @@
         const telefono = document.getElementById('barberoTelefono').value;
 
         const url = `/barberos?nombre=${encodeURIComponent(nombre)}&telefono=${encodeURIComponent(telefono)}`;
-        await fetch(url, { method: 'POST' });
+        const res = await fetchProtegido(url, { method: 'POST' });
         
-        alert('Barbero registrado con éxito');
-        document.getElementById('formBarbero').reset();
+        if (res.ok) {
+            alert('Barbero registrado con éxito');
+            document.getElementById('formBarbero').reset();
+        }
     }
 
     async function registrarServicio(event) {
@@ -180,10 +226,30 @@
         const duracion = document.getElementById('servicioDuracion').value;
 
         const url = `/servicios?nombre=${encodeURIComponent(nombre)}&precio=${precio}&duracion_minutos=${duracion}`;
-        await fetch(url, { method: 'POST' });
+        const res = await fetchProtegido(url, { method: 'POST' });
 
-        alert('Servicio registrado con éxito');
-        document.getElementById('formServicio').reset();
+        if (res.ok) {
+            alert('Servicio registrado con éxito');
+            document.getElementById('formServicio').reset();
+        }
+    }
+
+    async function cambiarPassword(event) {
+        event.preventDefault();
+        const passActual = document.getElementById('passActual').value;
+        const passNueva = document.getElementById('passNueva').value;
+
+        const url = `/cambiar-password?password_actual=${encodeURIComponent(passActual)}&nueva_password=${encodeURIComponent(passNueva)}`;
+        const res = await fetchProtegido(url, { method: 'POST' });
+
+        if (res.ok) {
+            alert('Contraseña actualizada correctamente.');
+            document.getElementById('passActual').value = '';
+            document.getElementById('passNueva').value = '';
+        } else {
+            const data = await res.json();
+            alert(data.detail || 'Error al actualizar contraseña');
+        }
     }
 
     cargarCitas();
