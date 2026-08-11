@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarberFlow - Panel de Administración</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; }
+        .container { max-width: 950px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        h1 { color: #38bdf8; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #0f172a; color: #38bdf8; }
+        tr:hover { background: #334155; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; background: #0284c7; }
+        .badge.completada { background: #16a34a; }
+        .btn-completar { background: #22c55e; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-completar:hover { background: #15803d; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>💈 BarberFlow - Agenda de Citas</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Teléfono</th>
+                <th>Barbero</th>
+                <th>Servicio</th>
+                <th>Fecha y Hora</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody id="tablaCitas"></tbody>
+    </table>
+</div>
+
+<script>
+    async function cargarCitas() {
+        const res = await fetch('/citas');
+        const citas = await res.json();
+        const tabla = document.getElementById('tablaCitas');
+        tabla.innerHTML = '';
+
+        citas.forEach(c => {
+            const esCompletada = c.estado === 'Completada';
+            tabla.innerHTML += `
+                <tr>
+                    <td>${c.id}</td>
+                    <td><strong>${c.cliente}</strong></td>
+                    <td>${c.telefono}</td>
+                    <td>${c.barbero}</td>
+                    <td>${c.servicio}</td>
+                    <td>${c.fecha_hora}</td>
+                    <td><span class="badge ${esCompletada ? 'completada' : ''}">${c.estado}</span></td>
+                    <td>
+                        ${!esCompletada ? `<button class="btn-completar" onclick="completarCita(${c.id})">✓ Atendido</button>` : '—'}
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function completarCita(id) {
+        await fetch(`/citas/${id}?estado=Completada`, { method: 'PUT' });
+        cargarCitas();
+    }
+
+    cargarCitas();
+</script>
+
+</body>
+</html>
