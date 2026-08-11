@@ -124,6 +124,22 @@ def actualizar_estado_cita(cita_id: int, estado: str):
     conexion.close()
     return {"mensaje": f"Cita {cita_id} actualizada a {estado}"}
 
+# 8. Obtener total de ingresos acumulados de citas completadas
+@app.get("/ingresos")
+def obtener_ingresos():
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT SUM(s.precio) 
+        FROM citas c 
+        JOIN servicios s ON c.servicio_id = s.id 
+        WHERE c.estado = 'Completada'
+    """)
+    resultado = cursor.fetchone()[0]
+    conexion.close()
+    total = resultado if resultado is not None else 0.0
+    return {"total_ingresos": total}
+
 # ==================== ARCHIVOS ESTÁTICOS (FRONTEND) ====================
 # Servir la interfaz gráfica alojada en la carpeta 'static'
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

@@ -7,8 +7,15 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; }
         .container { max-width: 950px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        h1 { color: #38bdf8; margin-top: 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        h1 { color: #38bdf8; margin: 0; }
+        
+        /* Tarjeta de Ingresos */
+        .card-ingresos { background: #0f172a; border: 1px solid #38bdf8; padding: 15px 25px; border-radius: 10px; text-align: right; }
+        .card-ingresos span { display: block; font-size: 0.85rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
+        .card-ingresos strong { font-size: 1.6rem; color: #4ade80; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
         th { background: #0f172a; color: #38bdf8; }
         tr:hover { background: #334155; }
@@ -21,7 +28,14 @@
 <body>
 
 <div class="container">
-    <h1>💈 BarberFlow - Agenda de Citas</h1>
+    <div class="header-flex">
+        <h1>💈 BarberFlow - Agenda</h1>
+        <div class="card-ingresos">
+            <span>Caja / Ingresos Totales</span>
+            <strong id="totalIngresos">$0.00</strong>
+        </div>
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -40,6 +54,12 @@
 </div>
 
 <script>
+    async function cargarIngresos() {
+        const res = await fetch('/ingresos');
+        const data = await res.json();
+        document.getElementById('totalIngresos').innerText = `$${data.total_ingresos.toFixed(2)}`;
+    }
+
     async function cargarCitas() {
         const res = await fetch('/citas');
         const citas = await res.json();
@@ -63,6 +83,8 @@
                 </tr>
             `;
         });
+
+        cargarIngresos();
     }
 
     async function completarCita(id) {
