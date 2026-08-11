@@ -6,17 +6,15 @@
     <title>BarberFlow - Panel de Administración</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; }
-        .container { max-width: 950px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .container { max-width: 1000px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
         h1 { color: #38bdf8; margin: 0; }
         h2 { color: #38bdf8; font-size: 1.1rem; margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
         
-        /* Tarjeta de Ingresos */
         .card-ingresos { background: #0f172a; border: 1px solid #38bdf8; padding: 15px 25px; border-radius: 10px; text-align: right; }
         .card-ingresos span { display: block; font-size: 0.85rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
         .card-ingresos strong { font-size: 1.6rem; color: #4ade80; }
 
-        /* Grid para Formularios */
         .forms-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .card-form { background: #0f172a; padding: 20px; border-radius: 10px; border: 1px solid #334155; }
         .form-group { margin-bottom: 12px; }
@@ -29,10 +27,19 @@
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
         th { background: #0f172a; color: #38bdf8; }
         tr:hover { background: #334155; }
+
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; background: #0284c7; }
         .badge.completada { background: #16a34a; }
-        .btn-completar { background: #22c55e; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .badge.cancelada { background: #dc2626; }
+
+        .action-btns { display: flex; gap: 6px; }
+        .btn-act { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-size: 0.8rem; }
+        .btn-completar { background: #22c55e; }
         .btn-completar:hover { background: #15803d; }
+        .btn-cancelar { background: #f97316; }
+        .btn-cancelar:hover { background: #c2410c; }
+        .btn-eliminar { background: #ef4444; }
+        .btn-eliminar:hover { background: #b91c1c; }
     </style>
 </head>
 <body>
@@ -46,7 +53,6 @@
         </div>
     </div>
 
-    <!-- Secciones para dar de alta Barbero y Servicio -->
     <div class="forms-grid">
         <div class="card-form">
             <h2>➕ Registrar Barbero</h2>
@@ -94,7 +100,7 @@
                 <th>Servicio</th>
                 <th>Fecha y Hora</th>
                 <th>Estado</th>
-                <th>Acción</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody id="tablaCitas"></tbody>
@@ -115,7 +121,11 @@
         tabla.innerHTML = '';
 
         citas.forEach(c => {
-            const esCompletada = c.estado === 'Completada';
+            const esPendiente = c.estado === 'Pendiente';
+            let badgeClass = '';
+            if (c.estado === 'Completada') badgeClass = 'completada';
+            if (c.estado === 'Cancelada') badgeClass = 'cancelada';
+
             tabla.innerHTML += `
                 <tr>
                     <td>${c.id}</td>
@@ -124,9 +134,13 @@
                     <td>${c.barbero}</td>
                     <td>${c.servicio}</td>
                     <td>${c.fecha_hora}</td>
-                    <td><span class="badge ${esCompletada ? 'completada' : ''}">${c.estado}</span></td>
+                    <td><span class="badge ${badgeClass}">${c.estado}</span></td>
                     <td>
-                        ${!esCompletada ? `<button class="btn-completar" onclick="completarCita(${c.id})">✓ Atendido</button>` : '—'}
+                        <div class="action-btns">
+                            ${esPendiente ? `<button class="btn-act btn-completar" onclick="cambiarEstado(${c.id}, 'Completada')">✓ Atendido</button>` : ''}
+                            ${esPendiente ? `<button class="btn-act btn-cancelar" onclick="cambiarEstado(${c.id}, 'Cancelada')">✕ Cancelar</button>` : ''}
+                            <button class="btn-act btn-eliminar" onclick="eliminarCita(${c.id})">🗑️</button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -135,9 +149,16 @@
         cargarIngresos();
     }
 
-    async function completarCita(id) {
-        await fetch(`/citas/${id}?estado=Completada`, { method: 'PUT' });
+    async function cambiarEstado(id, nuevoEstado) {
+        await fetch(`/citas/${id}?estado=${nuevoEstado}`, { method: 'PUT' });
         cargarCitas();
+    }
+
+    async function eliminarCita(id) {
+        if (confirm(`¿Estás seguro de eliminar permanentemente la cita ID ${id}?`)) {
+            await fetch(`/citas/${id}`, { method: 'DELETE' });
+            cargarCitas();
+        }
     }
 
     async function registrarBarbero(event) {

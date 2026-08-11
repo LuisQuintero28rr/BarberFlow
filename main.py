@@ -140,6 +140,16 @@ def obtener_ingresos():
     total = resultado if resultado is not None else 0.0
     return {"total_ingresos": total}
 
+# 9. Eliminar una cita de la base de datos
+@app.delete("/citas/{cita_id}")
+def eliminar_cita(cita_id: int):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute("DELETE FROM citas WHERE id = ?", (cita_id,))
+    conexion.commit()
+    conexion.close()
+    return {"mensaje": f"Cita {cita_id} eliminada con éxito"}
+
 # ==================== ARCHIVOS ESTÁTICOS (FRONTEND) ====================
 # Servir la interfaz gráfica alojada en la carpeta 'static'
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
