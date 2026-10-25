@@ -5,56 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BarberFlow - Agendar Cita</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; }
-        .card { max-width: 450px; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin: 0 auto; }
-        h1 { text-align: center; margin-bottom: 24px; font-size: 1.8rem; color: #38bdf8; }
-        label { font-size: 0.9rem; font-weight: 600; display: block; margin-top: 14px; color: #94a3b8; }
-        input, select, button { width: 100%; padding: 12px; margin-top: 6px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; }
-        input:focus, select:focus { outline: none; border-color: #38bdf8; }
-        button { background: #0284c7; color: white; font-weight: bold; border: none; margin-top: 24px; cursor: pointer; transition: 0.2s; }
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --accent-hover: #0284c7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #4ade80;
+            --danger: #f87171;
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .card { 
+            width: 100%; 
+            max-width: 460px; 
+            background: var(--card-bg); 
+            padding: 35px 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4); 
+            border: 1px solid var(--border-color);
+        }
+
+        .logo { text-align: center; font-size: 2.2rem; margin: 0; color: var(--accent); }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; margin-top: 5px; }
+        
+        .horarios-info {
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid var(--accent);
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            color: var(--accent);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        label { font-size: 0.85rem; font-weight: 600; display: block; margin-top: 14px; color: var(--text-muted); }
+        input, select, button { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 6px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+            background: var(--bg-color); 
+            color: white; 
+            box-sizing: border-box; 
+            font-size: 0.95rem; 
+        }
+
+        input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+        button { 
+            background: var(--accent-hover); 
+            color: white; 
+            font-weight: bold; 
+            border: none; 
+            margin-top: 24px; 
+            cursor: pointer; 
+            transition: background 0.2s; 
+        }
+
         button:hover { background: #0369a1; }
-        .exito { margin-top: 15px; text-align: center; color: #4ade80; font-weight: bold; }
+
+        .mensaje { 
+            margin-top: 15px; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+            display: none; 
+            padding: 12px; 
+            border-radius: 8px; 
+        }
+        .mensaje.exito { 
+            background: rgba(74, 222, 128, 0.15); 
+            color: var(--success); 
+            border: 1px solid var(--success); 
+        }
+        .mensaje.error { 
+            background: rgba(248, 113, 113, 0.15); 
+            color: var(--danger); 
+            border: 1px solid var(--danger); 
+        }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>💈 BarberFlow</h1>
+    <h1 class="logo">💈 BarberFlow</h1>
+    <p class="subtitle">Reserva tu cita en línea fácilmente</p>
+
+    <div class="horarios-info">
+        ⏰ <strong>Horario de atención:</strong> 9:00 AM - 7:00 PM
+    </div>
+
     <form id="formCita">
-        <label>Nombre del Cliente</label>
-        <input type="text" id="nombre" placeholder="Tu nombre completo" required>
+        <label for="nombre">Nombre Completo</label>
+        <input type="text" id="nombre" placeholder="Ej. Juan Pérez" required>
 
-        <label>Teléfono WhatsApp</label>
-        <input type="text" id="telefono" placeholder="6181234567" required>
+        <label for="telefono">Teléfono (WhatsApp)</label>
+        <input type="text" id="telefono" placeholder="Ej. 6181234567" required>
 
-        <label>Servicio</label>
+        <label for="servicio_id">Servicio</label>
         <select id="servicio_id" required></select>
 
-        <label>Barbero / Estilista</label>
+        <label for="barbero_id">Barbero / Estilista</label>
         <select id="barbero_id" required></select>
 
-        <label>Fecha y Hora</label>
+        <label for="fecha_hora">Fecha y Hora</label>
         <input type="datetime-local" id="fecha_hora" required>
 
         <button type="submit">Confirmar Cita</button>
     </form>
-    <div id="mensaje" class="exito"></div>
+    
+    <div id="mensaje" class="mensaje"></div>
 </div>
 
 <script>
     async function cargarCatalogos() {
-        // Cargar Servicios desde la API
+        // Cargar Servicios
         const resServicios = await fetch('/servicios');
         const servicios = await resServicios.json();
         const selectS = document.getElementById('servicio_id');
+        selectS.innerHTML = '<option value="">-- Selecciona un servicio --</option>';
         servicios.forEach(s => {
-            selectS.innerHTML += `<option value="${s.id}">${s.nombre} - $${s.precio}</option>`;
+            selectS.innerHTML += `<option value="${s.id}">${s.nombre} - $${s.precio} (${s.duracion_minutos} min)</option>`;
         });
 
-        // Cargar Barberos desde la API
+        // Cargar Barberos
         const resBarberos = await fetch('/barberos');
         const barberos = await resBarberos.json();
         const selectB = document.getElementById('barbero_id');
+        selectB.innerHTML = '<option value="">-- Selecciona un barbero --</option>';
         barberos.forEach(b => {
             selectB.innerHTML += `<option value="${b.id}">${b.nombre}</option>`;
         });
@@ -62,19 +156,39 @@
 
     document.getElementById('formCita').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const mensajeDiv = document.getElementById('mensaje');
+        
+        mensajeDiv.className = 'mensaje';
+        mensajeDiv.style.display = 'none';
+
         const nombre = document.getElementById('nombre').value;
         const telefono = document.getElementById('telefono').value;
         const servicioId = document.getElementById('servicio_id').value;
         const barberoId = document.getElementById('barbero_id').value;
-        const fechaHora = document.getElementById('fecha_hora').value.replace('T', ' ');
+        
+        let fechaHoraVal = document.getElementById('fecha_hora').value;
+        const fechaHora = fechaHoraVal.replace('T', ' ');
 
         const url = `/citas?cliente_nombre=${encodeURIComponent(nombre)}&cliente_telefono=${encodeURIComponent(telefono)}&barbero_id=${barberoId}&servicio_id=${servicioId}&fecha_hora=${encodeURIComponent(fechaHora)}`;
         
-        const res = await fetch(url, { method: 'POST' });
-        if (res.ok) {
-            document.getElementById('mensaje').innerText = '✅ ¡Cita agendada correctamente!';
-            document.getElementById('formCita').reset();
-            cargarCatalogos();
+        try {
+            const res = await fetch(url, { method: 'POST' });
+            const data = await res.json();
+
+            if (res.ok) {
+                mensajeDiv.innerText = '✅ ¡Cita agendada correctamente!';
+                mensajeDiv.classList.add('exito');
+                mensajeDiv.style.display = 'block';
+                document.getElementById('formCita').reset();
+            } else {
+                mensajeDiv.innerText = `⚠️ ${data.detail || 'Error al procesar la cita'}`;
+                mensajeDiv.classList.add('error');
+                mensajeDiv.style.display = 'block';
+            }
+        } catch (err) {
+            mensajeDiv.innerText = '⚠️ Error de conexión con el servidor.';
+            mensajeDiv.classList.add('error');
+            mensajeDiv.style.display = 'block';
         }
     });
 

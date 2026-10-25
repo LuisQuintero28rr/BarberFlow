@@ -1,5 +1,7 @@
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import hashlib
 import uuid
 import sqlite3
@@ -11,7 +13,6 @@ app = FastAPI(
     version="1.1.0"
 )
 
-# Diccionario temporal para guardar tokens activos en memoria
 TOKENS_ACTIVOS = {}
 
 def inicializar_admin():
@@ -24,7 +25,6 @@ def inicializar_admin():
             password_hash TEXT NOT NULL
         )
     """)
-    # Si no existe ningún admin, se crea uno por defecto: admin / admin123
     cursor.execute("SELECT COUNT(*) FROM administradores")
     if cursor.fetchone()[0] == 0:
         pass_hash = hashlib.sha256("admin123".encode()).hexdigest()
@@ -56,8 +56,9 @@ def login(usuario: str, password: str):
         return {"token": token, "mensaje": "Inicio de sesión correcto"}
     raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
 
-@app.post("/cambiar-password")
-def cambiar_password(password_actual: str, nueva_password: str, admin_user: str = Depends(verificar_admin)):
+# ENTREGABLE 5: Modificar usuario y contraseña del administrador
+@app.post("/cambiar-credenciales")
+def cambiar_credenciales(nuevo_usuario: str, password_actual: str, nueva_password: str, admin_user: str = Depends(verificar_admin)):
     old_hash = hashlib.sha256(password_actual.encode()).hexdigest()
     new_hash = hashlib.sha256(nueva_password.encode()).hexdigest()
 
@@ -70,10 +71,15 @@ def cambiar_password(password_actual: str, nueva_password: str, admin_user: str 
         conexion.close()
         raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
 
-    cursor.execute("UPDATE administradores SET password_hash = ? WHERE usuario = ?", (new_hash, admin_user))
+    cursor.execute("UPDATE administradores SET usuario = ?, password_hash = ? WHERE usuario = ?", (nuevo_usuario, new_hash, admin_user))
     conexion.commit()
     conexion.close()
-    return {"mensaje": "Contraseña actualizada con éxito"}
+
+    for t, u in list(TOKENS_ACTIVOS.items()):
+        if u == admin_user:
+            TOKENS_ACTIVOS[t] = nuevo_usuario
+
+    return {"mensaje": "Credenciales actualizadas con éxito"}
 
 # ==================== SERVICIOS ====================
 
@@ -148,12 +154,39 @@ def eliminar_barbero(barbero_id: int, _: str = Depends(verificar_admin)):
     conexion.close()
     return {"mensaje": f"Barbero {barbero_id} eliminado con éxito"}
 
-# ==================== CITAS ====================
+# ==================== CITAS (ENTREGABLE 4) ====================
 
 @app.post("/citas")
 def crear_cita(cliente_nombre: str, cliente_telefono: str, barbero_id: int, servicio_id: int, fecha_hora: str):
+    try:
+        dt = datetime.strptime(fecha_hora, "%Y-%m-%d %H:%M")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha u hora inválido. Usa YYYY-MM-DD HH:MM")
+
+    # Validar Horario de Atención (09:00 a 19:00 hrs)
+    HORA_INICIO = 9
+    HORA_FIN = 19
+    if dt.hour < HORA_INICIO or dt.hour >= HORA_FIN:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"El cliente no puede agendar fuera del horario de atención ({HORA_INICIO}:00 a {HORA_FIN}:00 hrs)."
+        )
+
     conexion = obtener_conexion()
     cursor = conexion.cursor()
+
+    # Validar Redundancia / Ocupación del barbero
+    cursor.execute("""
+        SELECT id FROM citas 
+        WHERE barbero_id = ? AND fecha_hora = ? AND estado != 'Cancelada'
+    """, (barbero_id, fecha_hora))
+    if cursor.fetchone():
+        conexion.close()
+        raise HTTPException(
+            status_code=400, 
+            detail="El barbero ya está ocupado en esa hora. Por favor selecciona otro horario o barbero."
+        )
+
     cursor.execute(
         "INSERT INTO citas (cliente_nombre, cliente_telefono, barbero_id, servicio_id, fecha_hora) VALUES (?, ?, ?, ?, ?)",
         (cliente_nombre, cliente_telefono, barbero_id, servicio_id, fecha_hora)
@@ -210,4 +243,16 @@ def obtener_ingresos(_: str = Depends(verificar_admin)):
     total = resultado if resultado is not None else 0.0
     return {"total_ingresos": total}
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+
+@app.get("/")
+def home():
+    return FileResponse("static/index.html")
+
+@app.get("/login.html")
+def login_view():
+    return FileResponse("static/login.html")
+
+@app.get("/admin.html")
+def admin_view():
+    return FileResponse("static/admin.html")
