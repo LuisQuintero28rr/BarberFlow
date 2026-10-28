@@ -25,4 +25,4 @@ BarberFlow es una aplicación web desarrollada para la gestión eficiente de cit
 
 ## 🌐 Enlace a la Aplicación en Producción
 - [Visitar BarberFlow en la Nube](https://barberflow-miox.onrender.com)
-- [Acceso al Panel de Administración](https://barberflow-miox.onrender.com/login.html) *(Usuario por defecto: admin / admin123)*
+- [Acceso al Panel de Administración](https://barberflow-miox.onrender.com/login.html)
