@@ -243,6 +243,99 @@ def obtener_ingresos(_: str = Depends(verificar_admin)):
     total = resultado if resultado is not None else 0.0
     return {"total_ingresos": total}
 
+import os
+import json
+import urllib.request
+import urllib.error
+from pydantic import BaseModel
+
+class ConsultaAsistente(BaseModel):
+    categoria: str              # "cabello" o "barba"
+    tipo_cabello: str | None = None
+    largo_cabello: str | None = None
+    estado_barba: str | None = None
+    preferencia_extra: str | None = None
+
+def recomendacion_respaldo(datos: ConsultaAsistente) -> str:
+    if datos.categoria == "cabello":
+        tipo = datos.tipo_cabello or "tu tipo de cabello"
+        largo = datos.largo_cabello or "tu largo actual"
+        return (
+            f"Para cabello {tipo} de largo {largo}, te conviene un corte con textura o degradado "
+            f"lateral limpio que aporte equilibrio y sea fácil de peinar en el día a día. "
+            f"Pídele a tu barbero: 'Quiero un corte limpio en los laterales y mantener textura arriba "
+            f"adaptado a mi cabello {tipo.lower()}'."
+        )
+    estado = datos.estado_barba or "tu barba actual"
+    return (
+        f"Para una barba {estado}, lo ideal es mantener orden en el contorno sin perder naturalidad. "
+        f"Pídele a tu barbero: 'Perfilado limpio en mejillas y cuello respetando mi crecimiento natural, "
+        f"con rebaje parejo para que se vea uniforme'."
+    )
+
+@app.post("/asistente-estilo")
+def consultar_asistente_estilo(datos: ConsultaAsistente):
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return {
+            "respuesta": recomendacion_respaldo(datos),
+            "modo": "respaldo_sin_api_key"
+        }
+
+    if datos.categoria == "cabello":
+        contexto = (
+            f"El cliente quiere asesoría para CORTE DE CABELLO. "
+            f"Tipo de cabello: {datos.tipo_cabello or 'no especificado'}. "
+            f"Largo actual: {datos.largo_cabello or 'no especificado'}. "
+            f"Nota adicional: {datos.preferencia_extra or 'ninguna'}."
+        )
+    else:
+        contexto = (
+            f"El cliente quiere asesoría para CORTE DE BARBA. "
+            f"Estado actual de la barba: {datos.estado_barba or 'no especificado'}. "
+            f"Nota adicional: {datos.preferencia_extra or 'ninguna'}."
+        )
+
+    prompt = (
+        "Actúa como un barbero profesional y estilista de BarberFlow. "
+        "Responde en español, de forma directa, amable y clara (máximo 120 palabras). "
+        "Indica 2 opciones de estilo que le favorezcan y explica brevemente cómo pedírselo "
+        "exactamente a su barbero según su condición actual.\n\n"
+        f"{contexto}"
+    )
+
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"gemini-2.5-flash:generateContent?key={api_key}"
+    )
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 250}
+    }
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+            candidatos = body.get("candidates", [])
+            partes = candidatos[0].get("content", {}).get("parts", []) if candidatos else []
+            texto = partes[0].get("text", "").strip() if partes else ""
+            if texto:
+                return {"respuesta": texto, "modo": "gemini"}
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, KeyError, IndexError, json.JSONDecodeError):
+        pass
+
+    return {
+        "respuesta": recomendacion_respaldo(datos),
+        "modo": "respaldo_error_api"
+    }
+
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
 @app.get("/")
